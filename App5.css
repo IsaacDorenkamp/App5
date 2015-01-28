@@ -1,0 +1,174 @@
+*{
+	font-family:"Segoe UI","Ubuntu","Arial","sans-serif";
+}
+body{
+	margin:3px;
+}
+app5-notification{
+	visibility:hidden;
+	opacity:0;
+	border-radius:5px;
+	-webkit-border-radius:5px;
+	-moz-border-radius:5px;
+	-o-border-radius:5px;
+	-ms-border-radius:5px;
+	border:1px solid black;
+	top:10px;
+	width:95%;
+	padding:8px;
+	min-height:20px;
+	
+	position:absolute;
+	left:50%;
+	transform : translateX(-50%);
+	-webkit-transform : translateX(-50%);
+	-moz-transform : translateX(-50%);
+	-o-transform : translateX(-50%);
+	-ms-transform : translateX(-50%);
+	
+	background:white;
+	
+	transition:opacity 300ms linear;
+	-webkit-transition:opacity 300ms linear;
+	-moz-transition:opacity 300ms linear;
+	-o-transition:opacity 300ms linear;
+	-ms-transition:opacity 300ms linear;
+	
+	z-index:5;
+}
+app5-panel{
+	display:block;
+}
+app5-tabpane{
+	display:block;
+	margin-top:2px;
+	margin-bottom:2px;
+}
+app5-tab{
+	background-color:grey;
+	color:white;
+	padding:3px;
+	
+	transition:background .2s ease-in-out;
+	-webkit-transition:background .2s ease-in-out;
+	-moz-transition:background .2s ease-in-out;
+	-o-transition:background .2s ease-in-out;
+	-ms-transition:background .2s ease-in-out;
+	
+	border-top-left-radius:5px;
+	-webkit-border-top-left-radius:5px;
+	-moz-border-top-left-radius:5px;
+	-o-border-top-left-radius:5px;
+	-ms-border-top-left-radius:5px;
+	
+	border-top-right-radius:5px;
+	-webkit-border-top-right-radius:5px;
+	-moz-border-top-right-radius:5px;
+	-o-border-top-right-radius:5px;
+	-ms-border-top-right-radius:5px;
+	
+	user-select:none;
+	-webkit-user-select:none;
+	-moz-user-select:-moz-none;
+	-o-user-select:none;
+	-ms-user-select:none;
+	
+	cursor:pointer;
+}
+app5-tab:active{
+	background-color:#555;
+}
+app5-tab[data-focused=true]{
+	background-color: #000 /* Navy Blue */;
+	font-weight:bold;
+}
+app5-tab:not([data-focused=true]):hover{
+	background-color: #444;
+}
+app5-tab-strip{
+	display:block;
+	padding-top:3px;
+	padding-bottom:3px;
+}
+app5-tab-meta{
+	display:block;
+	position:relative;
+	border:1px solid lightgrey;
+}
+app5-tab-meta > app5-panel{
+	position:absolute;
+	visibility:hidden;
+	top:0;
+	left:0;
+	width:100%
+}
+app5-menubar{
+	display:block;
+	padding:3px;
+	border:1px solid lightgrey;
+	cursor:default;
+}
+app5-menu{
+	min-width:150px;
+	position:fixed;
+	visibility:hidden;
+	background:white;
+	border:1px solid lightgrey;
+	z-index:5;
+}
+app5-menu > hr{
+	margin:0;
+	position:relative;
+	width:95%;
+	
+	left:50%;
+	transform:translateX(-50%);
+	-webkit-transform:translateX(-50%);
+	-moz-transform:translateX(-50%);
+	-o-transform:translateX(-50%);
+	-ms-transform:translateX(-50%);
+}
+app5-menuref{
+	padding:2px;
+	padding-left:4px;
+	padding-right:4px;
+	cursor:pointer;
+	margin:2px;
+	
+	transition:background .2s ease-in-out;
+	-webkit-transition:background .2s ease-in-out;
+	-moz-transition:background .2s ease-in-out;
+	-o-transition:background .2s ease-in-out;
+	-ms-transition:background .2s ease-in-out;
+}
+app5-menuref[data-focused='true']{
+	background:lightgrey;
+}
+app5-menuref:hover{
+	background:lightgrey;
+	
+	user-select:none;
+	-webkit-user-select:none;
+	-moz-user-select:-moz-none;
+	-o-user-select:none;
+	-ms-user-select:none;
+}
+app5-menu-meta{
+	visibility:hidden;
+}
+app5-menu-item{
+	display:block;
+	min-height:20px;
+	padding:4px;
+	background:white;
+}
+app5-menu-item:hover{
+	background:lightgrey;
+	cursor:pointer;
+	
+	user-select:none;
+	-webkit-user-select:none;
+	-moz-user-select:-moz-none;
+	-o-user-select:none;
+	-ms-user-select:none;
+}
