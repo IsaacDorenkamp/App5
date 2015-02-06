@@ -161,6 +161,15 @@ app5-menu-item{
 	min-height:20px;
 	padding:4px;
 	background:white;
+	
+	transition:background .2s ease-in-out;
+	-webkit-transition:background .2s ease-in-out;
+	-moz-transition:background .2s ease-in-out;
+	-o-transition:background .2s ease-in-out;
+	-ms-transition:background .2s ease-in-out;
+}
+app5-menu-item:not(:last-child){
+	border-bottom:1px solid lightgrey;
 }
 app5-menu-item:hover{
 	background:lightgrey;
@@ -171,4 +180,100 @@ app5-menu-item:hover{
 	-moz-user-select:-moz-none;
 	-o-user-select:none;
 	-ms-user-select:none;
+}
+app5-menu-cascade{
+	display:block;
+	min-height:20px;
+	padding:4px;
+	background:white;
+	
+	transition:background .2s ease-in-out;
+	-webkit-transition:background .2s ease-in-out;
+	-moz-transition:background .2s ease-in-out;
+	-o-transition:background .2s ease-in-out;
+	-ms-transition:background .2s ease-in-out;
+}
+app5-menu-cascade:not(:last-child){
+	border-bottom:1px solid lightgrey;
+}
+app5-menu-cascade:hover{
+	background:lightgrey;
+	cursor:pointer;
+	
+	user-select:none;
+	-webkit-user-select:none;
+	-moz-user-select:-moz-none;
+	-o-user-select:none;
+	-ms-user-select:none;
+}
+app5-menu-cascade::after{
+	content:'\025B6';
+	position:absolute;
+	right:0;
+}
+app5-modal{
+	position:fixed;
+	background:rgba(0,0,0,.6);
+	top:0; bottom:0; right:0; left:0;
+	visibility:hidden;
+}
+app5-dialog{
+	position:fixed;
+	top:40%;
+	left:50%;
+	
+	transform : translate(-50%,-50%);
+	-webkit-transform : translate(-50%,-50%);
+	-moz-transform : translate(-50%,-50%);
+	-o-transform : translate(-50%,-50%);
+	-ms-transform : translate(-50%,-50%);
+	
+	visibility:hidden;
+	
+	min-width:200px;
+	
+	text-align:center;
+	
+	border-radius:5px;
+	-webkit-border-radius:5px;
+	-moz-border-radius:5px;
+	-o-border-radius:5px;
+	-ms-border-radius:5px;
+	
+	background:#EEE;
+	border:1px solid lightgrey;
+}
+app5-dialog > hr{
+	height:1px;
+	margin:0;
+	border:none;
+	background-color:grey;
+}
+app5-modal > app5-dialog{
+	visibility:inherit;
+}
+
+.dialog_title{
+	margin:3px;
+	display:block;
+	text-align:left;
+}
+.dialog_closer{
+	display:inline-block;
+	float:right;
+	color:#AAA;
+}
+a.dialog_closer{
+	text-decoration:none;
+}
+.dialog_content{
+	padding:3px;
+}
+app5-effect{
+	display:inline-block;
+}
+::-webkit-scrollbar-thumb{
+	border-radius:3px;
+	-webkit-border-radius:3px;
+	width:5px;
 }

@@ -1,11 +1,60 @@
-var App5 = {};
-App5.PREFIXES = new Array(
-	"","-webkit-","-moz-","-o-","-ms-"
-);
+var App5 = {
+	VERSION: 'v0.1',
+	INIT_EXT: false,
+	Initializers: new Array(),
+	PREFIXES: new Array(
+		"","-webkit-","-moz-","-o-","-ms-"
+	),
+	CURRENT_MENU: null,
+	CURRENT_CASCADE: null,
+	
+	Effects:{},
+	
+	getEffect: function(fx_name){
+		return Object.create( this.Effects[fx_name] );
+	}
+};
 
-App5.VERSION = "v0.1";
+//Time to add the effects!
+App5.InitEffects = function(){
+	App5.Effects.CrazyBackground = {
+		tickRate: 250,
+		setup: function(elem){},
+		tick: function(elem){
+			var r_rand = Math.round(Math.random()*255);
+			var g_rand = Math.round(Math.random()*255);
+			var b_rand = Math.round(Math.random()*255);
+			App5.css(elem, 'background-color', 'rgb('+r_rand+','+g_rand+','+b_rand+')');
+		}
+	};
+
+	App5.Effects.Shake = {
+		tickRate: 150,
+		setup: function(elem){
+			App5.css(elem, "transition", "transform 150ms linear", -1);
+			App5.css(elem.parentNode, "overflow", "hidden");
+		},
+		tick: function(elem){
+			var rot = Math.round((Math.random() * 10) ) - 5;
+			var amtX = Math.round( (Math.random() * 10) - 5 );
+			var amtY = Math.round( (Math.random() * 10) - 5 );
+			App5.css(elem, "transform", "rotate("+rot+"deg) translate("+amtX+"px,"+amtY+"px)",-1);
+		}
+	}
+}
 
 var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+App5.AddInitializer = function(initter){
+	App5.Initializers.push(initter);
+};
+App5.ExecuteInitializers = function(){
+	if( App5.INIT_EXT ) throw new App5.Error("InitializationError","Cannot initialize extensions twice");
+	while( App5.Initializers.length > 0 ){
+		setTimeout(App5.Initializers.pop(),0);
+	}
+	App5.INIT_EXT = true;
+}
 
 App5.Initialize = function(){
 	if( !document.registerElement){
@@ -20,24 +69,46 @@ App5.Initialize = function(){
 		return;
 	}
 
+	var camel_case = function(name){
+		var output = "";
+		var doCapNext = false;
+		for(var i = 0; i < name.length; i++){
+			var curchar = name.charAt(i);
+			if(doCapNext){
+				output += curchar.toUpperCase();
+				doCapNext = false;
+				continue;
+			}
+			if(curchar == '-'){
+				doCapNext = true;
+				continue;
+			}
+			output += curchar;
+		}
+		return output;
+	};
+
 	App5.css = function(element, prop, val, prefopt){
 		if( val == undefined ){
-			return getComputedStyle(element,null)[prop];
+			var prop_camelcase = camel_case(prop);
+			return getComputedStyle(element,null)[prop_camelcase];
 		}else{
 			if( prefopt == 0 || prefopt == undefined){
 				element.style[prop] = val;
 				return;
 			}
-			for( var prefnum in App5.PREFIXES ){
+			for( var prefnum = 0; prefnum < App5.PREFIXES.length; prefnum++ ){
 				var prefix = App5.PREFIXES[prefnum];
 				if( prefopt == -1 ){
-					element.style[prefix+prop] = val;
+					element.style[camel_case(prefix+prop)] = val;
 				}else if( prefopt == 1 ){
 					element.style[prop] = prefix+val;
 				}else;
 			}
 		}
 	};
+	
+	App5.InitEffects();
 	
 	App5.consume = function(e){
 		if(e.preventDefault){
@@ -183,24 +254,38 @@ App5.Initialize = function(){
 	App5.Tab = document.registerElement( "app5-tab", { prototype : TabProto } );
 	
 	//Menu Time!
-	App5.CURRENT_MENU = null; //Currently open menu
-	
 	var MenuBarProto = Object.create( HTMLElement.prototype );
 	App5.MenuBar = document.registerElement("app5-menubar", { prototype : MenuBarProto } );
 	
 	var MenuProto = Object.create( HTMLElement.prototype );
 	
+	MenuProto.attachedCallback = function(){
+		var prev_elem = null;
+		function check_cascades(e){
+			if( App5.CURRENT_CASCADE != null ){
+				if( prev_elem != null && prev_elem != document.elementFromPoint(e.clientX,e.clientY) ){
+					App5.CURRENT_CASCADE.hide();
+				}
+			}
+			prev_elem = document.elementFromPoint(e.clientX,e.clientY);
+		}
+		this.onclick = check_cascades;
+	};
+	
 	MenuProto.show = function(x,y,ref){
-		App5.CURRENT_MENU = this;
-		ref.setAttribute("data-focused","true");
+		if(ref){
+			App5.CURRENT_MENU = this;
+			ref.setAttribute("data-focused","true");
+		}
 		
-		App5.css( App5.CURRENT_MENU, 'visibility', 'visible' );
-		App5.css( App5.CURRENT_MENU, 'left', x+"px" );
-		App5.css( App5.CURRENT_MENU, 'top', y+"px" );
+		App5.css( this, 'visibility', 'visible' );
+		App5.css( this, 'opacity', '1' );
+		App5.css( this, 'left', x+"px" );
+		App5.css( this, 'top', y+"px" );
 	};
 	MenuProto.hide = function(ref){
+		App5.css( this, 'visibility', 'hidden' );
 		if( App5.CURRENT_MENU == this ){
-			App5.css( App5.CURRENT_MENU, "visibility", "hidden" );
 			App5.CURRENT_MENU = null;
 			if(ref == undefined){
 				ref = document.querySelector('[data-focused="true"]');
@@ -216,7 +301,8 @@ App5.Initialize = function(){
 		this.menu = document.getElementById(this.getAttribute('menu'));
 		
 		var that = this;
-		this.onclick = function(){
+		
+		this.onclick = function(e){
 			if( App5.CURRENT_MENU == that.menu ){
 				App5.CURRENT_MENU.hide(that);
 				return;
@@ -241,6 +327,10 @@ App5.Initialize = function(){
 				
 				App5.CURRENT_MENU.show(left,bottom,that);
 			}
+			if( App5.CURRENT_CASCADE != null ){
+				App5.CURRENT_CASCADE.hide();
+				App5.CURRENT_CASCADE = null;
+			}
 		};
 	};
 	App5.MenuRef = document.registerElement( "app5-menuref", { prototype : MenuRefProto } );
@@ -251,12 +341,123 @@ App5.Initialize = function(){
 	var MenuItemProto = Object.create( HTMLElement.prototype );
 	App5.MenuItem = document.registerElement( "app5-menu-item", { prototype : MenuItemProto } );
 	
+	var MenuCascadeProto = Object.create( MenuItemProto );
+	MenuCascadeProto.attachedCallback = function(){
+		var menu = this.getAttribute('menu');
+		if( menu == null || menu == undefined || menu == "" ){
+			throw new App5.Error("MenuError","Menu attribute of <app5-menu-cascade> required, but not found.");
+			return;
+		}
+		var menu_node = document.getElementById(menu);
+		if( menu_node == undefined || menu_node == null ){
+			throw new App5.Error("MenuError","Menu attribute of <app5-menu-cascade> refers to nonexistent menu");
+			return;
+		}
+		this.menu = menu_node;
+		
+		var that = this;
+		this.onmouseover = function(e){
+			App5.CURRENT_CASCADE = that.menu;
+			var nums = that.getBoundingClientRect();
+			that.menu.show( nums.left + nums.width, nums.top );
+		};
+		this.onmouseleave = function(e){
+			var tag = document.elementFromPoint(e.clientX, e.clientY);
+			if( tag.parentNode != that.menu && tag.tagName == "APP5-MENU-ITEM" ){
+				this.menu.hide();
+				App5.CURRENT_CASCADE = null;
+			}
+		};
+	};
+	
+	App5.MenuCascade = document.registerElement( "app5-menu-cascade", { prototype : MenuCascadeProto } );
+	
 	document.onclick = function(e){
 		var targ = App5.getEventTarget(e);
 		if( targ.tagName != "APP5-MENUREF" ){
+			var cct = targ;
+			while( cct != null && cct.className != "menu-control" ) cct = cct.parentNode;
+			if( cct != null && cct.className == "menu-control" ) return;
+			
 			if(App5.CURRENT_MENU != null){
 				App5.CURRENT_MENU.hide();
 			}
+			if(App5.CURRENT_CASCADE != null){
+				App5.CURRENT_CASCADE.hide();
+				App5.CURRENT_CASCADE = null;
+			}
+		}
+	};
+	
+	var DialogProto = Object.create( HTMLElement.prototype );
+	DialogProto.show = function(){
+		App5.css(this.parentNode,"visibility","visible");
+	};
+	DialogProto.close = function(){
+		App5.css(this.parentNode,"visibility","hidden");
+	};
+	DialogProto.attachedCallback = function(){
+		if( this.parentNode.tagName != "APP5-MODAL" ){
+			throw new App5.Error("HierarchyError","Parent of app5-dialog must be app5-modal, not "+this.parentNode.tagName);
+		}
+	};
+	App5.Dialog = document.registerElement( "app5-dialog", { prototype : DialogProto } );
+	
+	var ModalProto = Object.create( HTMLElement.prototype );
+	App5.Modal = document.registerElement( "app5-modal", { prototype : ModalProto } );
+	
+	var EffectProto = Object.create( HTMLElement.prototype );
+	EffectProto.createdCallback = function(){
+		this.effect = App5.getEffect('CrazyBackground');
+		this.tick = 50;
+	};
+	EffectProto.attachedCallback = function(){
+		this.tick = parseInt( this.getAttribute('tick') ) || this.tick;
+		this.effect = App5.getEffect( this.getAttribute('effect') || 'CrazyBackground' );
+		
+		this.effect.setup(this);
+		
+		var that = this;
+		setTimeout( function ticker(){
+			if( that.effect ){
+				that.tick = that.effect.tickRate;
+				that.effect.tick(that);
+			}
+			setTimeout(ticker,that.tick);
+		}, this.tick);
+	};
+	App5.Effect = document.registerElement( "app5-effect", { prototype : EffectProto } );
+	
+	function ExtensionData(name,version){
+		this.name = name;
+		this.version = version;
+		
+		var that = this;
+		this.toString = function(){
+			return that.name + " " + that.version;
+		};
+	}
+	App5.ExtensionData = ExtensionData;
+	
+	function Extension(name,fullname,version){
+		this.NAME = name;
+		this[name+"Data"] = new ExtensionData(fullname,version);
+		
+		this.oninitialize = function(){};
+	}
+	App5.Extension = Extension;
+	
+	App5.ExtensionManager = {
+		install: function(ext){
+			for(var ext_comp in ext){
+				if(ext_comp == "oninitialize" || ext_comp == "NAME"){ //Skip oninitialize method that
+					continue;				      //is to be called by this method
+				}
+				App5[ext_comp] = ext[ext_comp];
+			}
+			ext.oninitialize();
+			var data = ext[ext.NAME+"Data"];
+			console.log("Installed and Initialized "+data.toString());
 		}
 	};
 	
@@ -272,6 +473,9 @@ App5.Initialize = function(){
 			var strip = pane.getElementsByTagName("app5-tab-strip")[0];
 			strip.querySelector('app5-tab:first-of-type').select();
 		}
+		
+		//Initialize Extensions
+		App5.ExecuteInitializers(); //wait to load and apply styles before initting extensions
 	};
 	document.head.appendChild(style);
 	
