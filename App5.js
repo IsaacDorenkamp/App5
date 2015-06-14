@@ -1,5 +1,5 @@
 var App5 = {
-	VERSION: 'v0.1',
+	VERSION: 'v1.2 Beta',
 	INIT_EXT: false,
 	Initializers: new Array(),
 	PREFIXES: new Array(
@@ -13,6 +13,35 @@ var App5 = {
 	getEffect: function(fx_name){
 		return Object.create( this.Effects[fx_name] );
 	}
+};
+
+var Q5 = {
+	id: function(id){
+		return document.getElementById( id );
+	},
+	tag: function( tag ){
+		return document.getElementsByTagName( tag );	
+	},
+	classname: function( clazz ){
+		return document.getElementsByClassName( clazz );
+	}
+};
+
+var APP5_PATH = "/app5";
+
+App5.loadScript = function(src,callback){
+	var script = document.createElement('script');
+	script.src = src;
+	if( callback ) script.onload = function(){ callback(script) };
+	document.head.appendChild( script );
+};
+
+App5.loadStyle = function(src,callback){
+	var style = document.createElement('link');
+	style.rel = "stylesheet";
+	style.href = src;
+	if( callback) style.onload = function(){ callback(style) };
+	document.head.appendChild( style );
 };
 
 //Time to add the effects!
@@ -43,6 +72,27 @@ App5.InitEffects = function(){
 	}
 }
 
+App5.AJAX = function(url,method,handler,postdata){
+    var xmlhttp;
+    try{
+        xmlhttp = new XMLHttpRequest();
+    }catch(e){
+        xmlhttp = new ActiveXObject("MSXML.XMLHTTP");
+    }
+    xmlhttp.open(method,url,true);
+    xmlhttp.onreadystatechange = function(){ 
+	    if(xmlhttp.readyState == 4 && this.status == 200){
+		    handler(xmlhttp) ;
+	    }
+	};
+    if( method == "POST" ){
+	xmlhttp.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+        xmlhttp.send(postdata);
+    }else{
+	xmlhttp.send();
+    }
+};
+
 var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 App5.AddInitializer = function(initter){
@@ -51,7 +101,7 @@ App5.AddInitializer = function(initter){
 App5.ExecuteInitializers = function(){
 	if( App5.INIT_EXT ) throw new App5.Error("InitializationError","Cannot initialize extensions twice");
 	while( App5.Initializers.length > 0 ){
-		setTimeout(App5.Initializers.pop(),0);
+		(App5.Initializers.pop())();
 	}
 	App5.INIT_EXT = true;
 }
@@ -60,9 +110,9 @@ App5.Initialize = function(){
 	if( !document.registerElement){
 		var fallback = document.createElement('script');
 		if( navigator.appName.indexOf("Microsoft") != -1 ){
-			fallback.src = "external-rc/document-register-element-ie8.js";
+			fallback.src = APP5_PATH+"/external-rc/document-register-element-ie8.js";
 		}else{
-			fallback.src = "external-rc/document-register-element.js";
+			fallback.src = APP5_PATH+"/external-rc/document-register-element.js";
 		}
 		document.head.appendChild(fallback);
 		fallback.onload = App5.Initialize;
@@ -105,6 +155,40 @@ App5.Initialize = function(){
 					element.style[prop] = prefix+val;
 				}else;
 			}
+		}
+	};
+	
+	App5.CSSRules = {
+		GetRule: function(name){
+			name = name.toLowerCase();
+			
+			if( document.styleSheets ){
+				for( var i = 0; i < document.styleSheets.length; i++ ){
+					var sheet = document.styleSheets[i];
+					var ruleset = sheet.cssRules || sheet.rules;
+					for( var j = 0; j < ruleset.length; j++ ){
+						var cur_rule = ruleset[j];
+						if( cur_rule ){
+							if( cur_rule.selectorText.toLowerCase() == name ){
+								return cur_rule;
+							}
+						}
+					}
+				}
+			}
+			
+			return null;
+		},
+		AddRule: function(name){
+			if( document.styleSheets ){
+				var sheet = document.styleSheets[0];
+				if( sheet.addRule ) sheet.addRule( name, null, 0 );
+				else sheet.insertRule( rule + '{  }', 0 );
+			}
+			return this.GetRule( name );
+		},
+		EditRule: function( rule, prop, val ){
+			rule.style[prop] = val;
 		}
 	};
 	
@@ -189,12 +273,42 @@ App5.Initialize = function(){
 	
 	//Tab Stuff
 	var TabPaneProto = Object.create( HTMLElement.prototype );
+	TabPaneProto.createdCallback = function(){
+		var that = this;
+		this.getSelected = function(){
+			var tabs = that.getElementsByTagName("app5-tab");
+			for( var i = 0; i < tabs.length; i++ ){
+				if( tabs[i].getAttribute("data-focused") ){
+					return tabs[i];
+				}
+			}
+		};
+	};
 	App5.TabPane = document.registerElement( "app5-tabpane", { prototype: TabPaneProto } );
 	
 	var TabStripProto = Object.create( HTMLElement.prototype );
 	App5.TabStrip = document.registerElement( "app5-tab-strip", { prototype : TabStripProto } );
 	
 	var TabMetaProto = Object.create( PanelProto );
+	TabMetaProto.createdCallback = function(){
+		this.autoresize = true;
+	};
+	TabMetaProto.attachedCallback = function(){
+		var resize_att = this.getAttribute("autoresize");
+		if( resize_att == "false" ){
+			this.autoresize = false;
+		}
+	};
+	TabMetaProto.attributeChangedCallback = function(name,oldv,newv){
+		if( name == "autoresize" ){
+			if( newv == "false" ){
+				this.autoresize = false;
+			}else if( newv == "true" ){
+				this.autoresize = true;
+			}else;
+		}
+	};
+	
 	document.registerElement("app5-tab-meta", { prototype : TabMetaProto } );
 	
 	var TabProto = Object.create( HTMLElement.prototype );
@@ -209,6 +323,7 @@ App5.Initialize = function(){
 		}else{
 			var panel = this.panel;
 			var that = this;
+			var tmeta = this.parentNode.parentNode.getElementsByTagName("app5-tab-meta")[0];
 			this.onclick = function(){
 				that.select();
 			};
@@ -227,7 +342,7 @@ App5.Initialize = function(){
 					if( el.id == panel ){
 						App5.css(el, "visibility","visible");
 						var setsize = function(){
-							if(that.getAttribute('data-focused') == 'true'){
+							if(that.getAttribute('data-focused') == 'true' && tmeta.autoresize ){
 								App5.css(elem.parentNode,'height',elem.offsetHeight);
 							}
 						};
@@ -288,9 +403,10 @@ App5.Initialize = function(){
 		if( App5.CURRENT_MENU == this ){
 			App5.CURRENT_MENU = null;
 			if(ref == undefined){
-				ref = document.querySelector('[data-focused="true"]');
+				ref = document.querySelector('app5-menuref[data-focused="true"]');
 			}
-			ref.setAttribute("data-focused","false");
+			if( ref )
+				ref.setAttribute("data-focused","false");
 		}
 	};
 	
@@ -390,11 +506,16 @@ App5.Initialize = function(){
 	};
 	
 	var DialogProto = Object.create( HTMLElement.prototype );
+	DialogProto.createdCallback = function(){
+		this.setAttribute('data-showing','false');
+	};
 	DialogProto.show = function(){
 		App5.css(this.parentNode,"visibility","visible");
+		this.setAttribute('data-showing','true');
 	};
 	DialogProto.close = function(){
 		App5.css(this.parentNode,"visibility","hidden");
+		this.setAttribute('data-showing','false');
 	};
 	DialogProto.attachedCallback = function(){
 		if( this.parentNode.tagName != "APP5-MODAL" ){
@@ -406,6 +527,7 @@ App5.Initialize = function(){
 	var ModalProto = Object.create( HTMLElement.prototype );
 	App5.Modal = document.registerElement( "app5-modal", { prototype : ModalProto } );
 	
+	//Effects!
 	var EffectProto = Object.create( HTMLElement.prototype );
 	EffectProto.createdCallback = function(){
 		this.effect = App5.getEffect('CrazyBackground');
@@ -428,6 +550,22 @@ App5.Initialize = function(){
 	};
 	App5.Effect = document.registerElement( "app5-effect", { prototype : EffectProto } );
 	
+	//Context Menu Stuff. Yeah bro.
+	App5.SetContextMenu = function(target, menu){
+		target.oncontextmenu = function(e){
+			App5.consume( e );
+			if( App5.CURRENT_MENU)
+				App5.CURRENT_MENU.hide();
+			if( App5.CURRENT_CASCADE ){
+				App5.CURRENT_CASCADE.hide();
+				App5.CURRENT_CASCADE = null;
+			}
+			menu.show( e.clientX, e.clientY );
+			App5.CURRENT_MENU = menu;
+		};
+	};
+	
+	//Extension stuff.
 	function ExtensionData(name,version){
 		this.name = name;
 		this.version = version;
@@ -464,14 +602,19 @@ App5.Initialize = function(){
 	//Load App5 stylesheet (IMPORTANT!)
 	var style = document.createElement('link');
 	style.rel = "stylesheet";
-	style.href = "App5.css";
+	style.href = APP5_PATH+'/App5.css';
 	style.onload = function(){
 		//Auto-select first tab
 		var tab_panes = document.getElementsByTagName("app5-tabpane");
 		for(var i = 0; i < tab_panes.length; i++){
 			var pane = tab_panes[i];
 			var strip = pane.getElementsByTagName("app5-tab-strip")[0];
-			strip.querySelector('app5-tab:first-of-type').select();
+			var tab = strip.querySelector('app5-tab:first-of-type');
+			if( tab == null ) break;
+			else{
+				tab.select();
+				break;
+			}
 		}
 		
 		//Initialize Extensions
